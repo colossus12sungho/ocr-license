@@ -2,9 +2,9 @@
   "users": {
     "hdec_site_a": {
       "name": "ìì± íì¥ A",
-      "allowed": true,
-      "expire": "2026-04-06T09:04:44.150Z",
-      "note": "7일 허가"
+      "allowed": false,
+      "expire": "",
+      "note": "관리자 취소"
     },
     "hdec_site_b": {
       "name": "ìì± íì¥ B",
