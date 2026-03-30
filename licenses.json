@@ -11,6 +11,12 @@
       "allowed": false,
       "expire": "",
       "note": "관리자 취소"
+    },
+    "감사실": {
+      "name": "감사실",
+      "allowed": false,
+      "expire": "",
+      "note": ""
     }
   }
 }
