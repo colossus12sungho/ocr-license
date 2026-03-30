@@ -198,14 +198,20 @@ async function fetchLicenses() {
   if (!r.ok) { toast(`파일 로드 실패: ${r.status}`, true); return null; }
   const meta = await r.json();
   _cachedSha = meta.sha;
-  const data = JSON.parse(atob(meta.content.replace(/\n/g, '')));
+  // atob()은 Latin-1만 처리 → UTF-8 한글 깨짐. TextDecoder로 올바르게 디코딩
+  const b64 = meta.content.replace(/\n/g, '');
+  const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  const data = JSON.parse(new TextDecoder('utf-8').decode(bytes));
   _cachedData = data;
   return data;
 }
 
 async function saveLicenses(data) {
   const { repo, path, token } = getCfg();
-  const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
+  // JSON → UTF-8 바이트 → Base64 (한글 손상 없이 인코딩)
+  const jsonStr = JSON.stringify(data, null, 2);
+  const utf8Bytes = new TextEncoder().encode(jsonStr);
+  const content = btoa(String.fromCharCode(...utf8Bytes));
   const r = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
     method: 'PUT',
     headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
