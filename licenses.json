@@ -14,9 +14,9 @@
     },
     "감사실": {
       "name": "감사실",
-      "allowed": false,
-      "expire": "",
-      "note": ""
+      "allowed": true,
+      "expire": "2026-04-02T09:11:58.966Z",
+      "note": "3일 허가"
     }
   }
 }
