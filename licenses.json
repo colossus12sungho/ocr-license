@@ -1,13 +1,13 @@
 {
   "users": {
     "hdec_site_a": {
-      "name": "와성 현장 A",
+      "name": "ìì± íì¥ A",
       "allowed": false,
       "expire": "",
-      "note": ""
+      "note": "관리자 취소"
     },
     "hdec_site_b": {
-      "name": "와성 현장 B",
+      "name": "ìì± íì¥ B",
       "allowed": false,
       "expire": "",
       "note": ""
