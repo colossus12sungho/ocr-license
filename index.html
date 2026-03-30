@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GPT OCR 사용권한 관리</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Malgun Gothic', sans-serif;
+    background: #0d0d1a;
+    color: #ddd;
+    min-height: 100vh;
+    padding: 24px;
+  }
+  h1 { color: #88ccff; font-size: 1.4rem; margin-bottom: 6px; }
+  .subtitle { color: #666; font-size: 0.8rem; margin-bottom: 24px; }
+  .config-box {
+    background: #1a1a2e;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    max-width: 600px;
+  }
+  .config-box label { font-size: 0.75rem; color: #aaa; display: block; margin-bottom: 4px; }
+  .config-box input {
+    width: 100%;
+    background: #0d0d1a;
+    border: 1px solid #444;
+    border-radius: 4px;
+    color: #fff;
+    padding: 7px 10px;
+    font-size: 0.85rem;
+    margin-bottom: 12px;
+  }
+  .config-box input:focus { outline: none; border-color: #88ccff; }
+  .btn-save-cfg {
+    background: #4a9eff; color: #fff; border: none;
+    padding: 8px 20px; border-radius: 5px; cursor: pointer;
+    font-size: 0.85rem; font-weight: bold;
+  }
+  .btn-save-cfg:hover { background: #2277dd; }
+  .section-title {
+    color: #88ccff; font-size: 0.9rem; font-weight: bold;
+    margin: 24px 0 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .user-card {
+    background: #1a1a2e;
+    border: 1px solid #2a2a4a;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    max-width: 600px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .user-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .user-name { font-weight: bold; font-size: 1rem; }
+  .badge {
+    font-size: 0.72rem;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: bold;
+  }
+  .badge.active   { background: #14532d; color: #86efac; }
+  .badge.expired  { background: #4c0519; color: #fca5a5; }
+  .badge.inactive { background: #1f2937; color: #9ca3af; }
+  .expire-info { font-size: 0.78rem; color: #aaa; }
+  .expire-info span { color: #f59e0b; }
+  .controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .controls select, .controls input[type=number] {
+    background: #0d0d1a;
+    border: 1px solid #444;
+    border-radius: 4px;
+    color: #fff;
+    padding: 5px 8px;
+    font-size: 0.82rem;
+  }
+  .btn {
+    border: none; border-radius: 5px; cursor: pointer;
+    font-size: 0.8rem; font-weight: bold; padding: 6px 14px;
+  }
+  .btn-grant  { background: #10b981; color: #fff; }
+  .btn-grant:hover  { background: #059669; }
+  .btn-revoke { background: #ef4444; color: #fff; }
+  .btn-revoke:hover { background: #b91c1c; }
+  .btn-add    { background: #7c3aed; color: #fff; }
+  .btn-add:hover    { background: #5b21b6; }
+  .status-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: #1a1a2e; border-top: 1px solid #333;
+    padding: 10px 24px; font-size: 0.82rem; color: #888;
+  }
+  .status-bar span { color: #f59e0b; }
+  .add-form {
+    background: #12122a; border: 1px dashed #444;
+    border-radius: 8px; padding: 14px; max-width: 600px;
+    margin-bottom: 12px; display: none;
+  }
+  .add-form.open { display: block; }
+  .add-form input {
+    background: #0d0d1a; border: 1px solid #444; border-radius: 4px;
+    color: #fff; padding: 6px 10px; font-size: 0.82rem;
+    width: 100%; margin-bottom: 8px;
+  }
+  .row { display: flex; gap: 8px; }
+  .row input { flex: 1; }
+  #toast {
+    position: fixed; top: 20px; right: 20px;
+    background: #10b981; color: #fff;
+    padding: 10px 18px; border-radius: 6px;
+    font-size: 0.85rem; font-weight: bold;
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; z-index: 999;
+  }
+  #toast.show { opacity: 1; }
+  #toast.error { background: #ef4444; }
+</style>
+</head>
+<body>
+
+<h1>🔐 GPT OCR 사용권한 관리</h1>
+<p class="subtitle">GitHub Pages + GitHub API 기반 · 저장 즉시 클라이언트에 반영</p>
+
+<!-- GitHub 설정 -->
+<div class="config-box">
+  <label>📁 GitHub 저장소 (owner/repo)</label>
+  <input id="cfg-repo" placeholder="예: yourname/ocr-license" />
+  <label>📄 licenses.json 경로 (repo 내 경로)</label>
+  <input id="cfg-path" placeholder="예: licenses.json" value="licenses.json" />
+  <label>🔑 GitHub Personal Access Token (Contents 쓰기 권한)</label>
+  <input id="cfg-token" type="password" placeholder="ghp_xxxx..." />
+  <button class="btn-save-cfg" onclick="saveCfg()">설정 저장 (로컬)</button>
+</div>
+
+<div class="section-title">
+  👥 사용자 목록
+  <button class="btn btn-add" onclick="toggleAddForm()">+ 사용자 추가</button>
+</div>
+
+<div class="add-form" id="add-form">
+  <div class="row">
+    <input id="new-key"  placeholder="사용자 키 (영문, 예: hdec_site_c)" />
+    <input id="new-name" placeholder="표시 이름 (예: 와성 현장 C)" />
+  </div>
+  <button class="btn btn-grant" onclick="addUser()">추가</button>
+</div>
+
+<div id="user-list"></div>
+
+<div id="toast"></div>
+<div class="status-bar">마지막 갱신: <span id="last-update">-</span></div>
+
+<script>
+// ── 설정 로드/저장 ────────────────────────────────────────────────────────
+function saveCfg() {
+  localStorage.setItem('gh_repo',  document.getElementById('cfg-repo').value.trim());
+  localStorage.setItem('gh_path',  document.getElementById('cfg-path').value.trim());
+  localStorage.setItem('gh_token', document.getElementById('cfg-token').value.trim());
+  toast('설정 저장됨 (브라우저 로컬 저장소)');
+  loadLicenses();
+}
+function loadCfg() {
+  document.getElementById('cfg-repo').value  = localStorage.getItem('gh_repo')  || '';
+  document.getElementById('cfg-path').value  = localStorage.getItem('gh_path')  || 'licenses.json';
+  document.getElementById('cfg-token').value = localStorage.getItem('gh_token') || '';
+}
+function getCfg() {
+  return {
+    repo:  localStorage.getItem('gh_repo')  || '',
+    path:  localStorage.getItem('gh_path')  || 'licenses.json',
+    token: localStorage.getItem('gh_token') || '',
+  };
+}
+
+// ── GitHub API 헬퍼 ───────────────────────────────────────────────────────
+let _cachedSha = '';
+let _cachedData = null;
+
+async function fetchLicenses() {
+  const { repo, path, token } = getCfg();
+  if (!repo || !token) { toast('GitHub 설정을 먼저 입력하세요', true); return null; }
+  const r = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
+    headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }
+  });
+  if (!r.ok) { toast(`파일 로드 실패: ${r.status}`, true); return null; }
+  const meta = await r.json();
+  _cachedSha = meta.sha;
+  const data = JSON.parse(atob(meta.content.replace(/\n/g, '')));
+  _cachedData = data;
+  return data;
+}
+
+async function saveLicenses(data) {
+  const { repo, path, token } = getCfg();
+  const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
+  const r = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
+    method: 'PUT',
+    headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message: `[OCR License] update ${new Date().toISOString()}`,
+      content: content,
+      sha: _cachedSha,
+    })
+  });
+  if (!r.ok) { const e = await r.json(); toast(`저장 실패: ${e.message}`, true); return false; }
+  const result = await r.json();
+  _cachedSha = result.content.sha;
+  return true;
+}
+
+// ── 화면 렌더링 ───────────────────────────────────────────────────────────
+function getStatus(user) {
+  if (!user.allowed) return 'inactive';
+  if (!user.expire)  return 'active';
+  return new Date(user.expire) > new Date() ? 'active' : 'expired';
+}
+
+function formatExpire(expire) {
+  if (!expire) return '기간 제한 없음';
+  const d = new Date(expire);
+  const now = new Date();
+  const diff = d - now;
+  if (diff <= 0) return `만료됨 (${d.toLocaleString('ko-KR')})`;
+  const days  = Math.floor(diff / 86400000);
+  const hours = Math.floor((diff % 86400000) / 3600000);
+  const mins  = Math.floor((diff % 3600000)  / 60000);
+  let rem = '';
+  if (days  > 0) rem += `${days}일 `;
+  if (hours > 0) rem += `${hours}시간 `;
+  rem += `${mins}분 남음`;
+  return `${d.toLocaleString('ko-KR')} (${rem})`;
+}
+
+function renderUsers(data) {
+  const list = document.getElementById('user-list');
+  list.innerHTML = '';
+  const users = data.users || {};
+  if (Object.keys(users).length === 0) {
+    list.innerHTML = '<p style="color:#666;font-size:0.85rem;">등록된 사용자 없음</p>';
+    return;
+  }
+  for (const [key, user] of Object.entries(users)) {
+    const st = getStatus(user);
+    const badgeText = st === 'active' ? '✅ 사용 중' : st === 'expired' ? '⛔ 만료' : '🔒 비허가';
+    const card = document.createElement('div');
+    card.className = 'user-card';
+    card.innerHTML = `
+      <div class="user-header">
+        <div>
+          <div class="user-name">${user.name || key}</div>
+          <div style="font-size:0.72rem;color:#666;margin-top:2px;">키: ${key}</div>
+        </div>
+        <span class="badge ${st}">${badgeText}</span>
+      </div>
+      <div class="expire-info">만료: <span>${formatExpire(user.expire)}</span>${user.note ? ' · ' + user.note : ''}</div>
+      <div class="controls">
+        <select id="days-${key}">
+          <option value="1">1일</option>
+          <option value="3">3일</option>
+          <option value="7" selected>7일</option>
+          <option value="14">14일</option>
+          <option value="30">30일</option>
+          <option value="0">무제한</option>
+          <option value="custom">직접 입력</option>
+        </select>
+        <input type="number" id="custom-${key}" placeholder="일수" min="1"
+               style="display:none;width:70px;" />
+        <button class="btn btn-grant" onclick="grantUser('${key}')">허가</button>
+        <button class="btn btn-revoke" onclick="revokeUser('${key}')">취소</button>
+      </div>
+    `;
+    list.appendChild(card);
+    // custom 입력 토글
+    document.getElementById(`days-${key}`).addEventListener('change', function() {
+      document.getElementById(`custom-${key}`).style.display =
+        this.value === 'custom' ? 'inline-block' : 'none';
+    });
+  }
+  document.getElementById('last-update').textContent = new Date().toLocaleString('ko-KR');
+}
+
+// ── 동작 함수 ─────────────────────────────────────────────────────────────
+async function loadLicenses() {
+  const data = await fetchLicenses();
+  if (data) renderUsers(data);
+}
+
+async function grantUser(key) {
+  const data = _cachedData;
+  if (!data) { toast('먼저 설정을 저장하고 로드하세요', true); return; }
+  const sel = document.getElementById(`days-${key}`);
+  let days = parseInt(sel.value);
+  if (sel.value === 'custom') {
+    days = parseInt(document.getElementById(`custom-${key}`).value);
+    if (isNaN(days) || days < 1) { toast('일수를 올바르게 입력하세요', true); return; }
+  }
+  const expire = days === 0 ? '' : new Date(Date.now() + days * 86400000).toISOString();
+  data.users[key].allowed = true;
+  data.users[key].expire  = expire;
+  data.users[key].note    = days === 0 ? '무제한 허가' : `${days}일 허가`;
+  const ok = await saveLicenses(data);
+  if (ok) { toast(`✅ ${data.users[key].name} 허가 완료 (${days === 0 ? '무제한' : days + '일'})`); renderUsers(data); }
+}
+
+async function revokeUser(key) {
+  const data = _cachedData;
+  if (!data) return;
+  data.users[key].allowed = false;
+  data.users[key].expire  = '';
+  data.users[key].note    = '관리자 취소';
+  const ok = await saveLicenses(data);
+  if (ok) { toast(`🔒 ${data.users[key].name} 권한 취소됨`); renderUsers(data); }
+}
+
+async function addUser() {
+  const key  = document.getElementById('new-key').value.trim().replace(/\s+/g, '_');
+  const name = document.getElementById('new-name').value.trim();
+  if (!key || !name) { toast('키와 이름을 모두 입력하세요', true); return; }
+  const data = _cachedData;
+  if (!data) { toast('설정을 저장하고 로드하세요', true); return; }
+  if (data.users[key]) { toast('이미 존재하는 키입니다', true); return; }
+  data.users[key] = { name, allowed: false, expire: '', note: '' };
+  const ok = await saveLicenses(data);
+  if (ok) {
+    toast(`사용자 ${name} 추가됨`);
+    document.getElementById('new-key').value  = '';
+    document.getElementById('new-name').value = '';
+    toggleAddForm(false);
+    renderUsers(data);
+  }
+}
+
+function toggleAddForm(forceClose) {
+  const f = document.getElementById('add-form');
+  if (forceClose === false || f.classList.contains('open')) {
+    f.classList.remove('open');
+  } else {
+    f.classList.add('open');
+  }
+}
+
+// ── 토스트 알림 ───────────────────────────────────────────────────────────
+function toast(msg, isError = false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show' + (isError ? ' error' : '');
+  setTimeout(() => { el.className = ''; }, 3000);
+}
+
+// ── 초기화 ───────────────────────────────────────────────────────────────
+loadCfg();
+if (localStorage.getItem('gh_repo') && localStorage.getItem('gh_token')) {
+  loadLicenses();
+}
+// 60초마다 자동 갱신
+setInterval(loadLicenses, 60000);
+</script>
+</body>
+</html>

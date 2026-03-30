@@ -1,0 +1,16 @@
+{
+  "users": {
+    "hdec_site_a": {
+      "name": "와성 현장 A",
+      "allowed": false,
+      "expire": "",
+      "note": ""
+    },
+    "hdec_site_b": {
+      "name": "와성 현장 B",
+      "allowed": false,
+      "expire": "",
+      "note": ""
+    }
+  }
+}
